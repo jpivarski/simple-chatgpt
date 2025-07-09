@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta charset="utf-8">
+    <title>ChatGPT</title>
+    <style>
+      body {
+          font-family: Arial, Helvetica, sans-serif;
+          background: black;
+          font-size: 1em;
+          line-height: 1.2;
+      }
+
+      details {
+          color: #ffff00;
+          margin-bottom: 10px;
+          font-size: 1em;
+          line-height: 1.2;
+      }
+
+      input {
+          border: 1px solid #808000;
+          background: black;
+          color: #ffff00;
+          outline: none;
+          font-size: 1em;
+          line-height: 1.2;
+      }
+
+      #messages {
+          margin-bottom: 60vh;
+      }
+
+      .message {
+          width: 100%;
+          margin-top: 10px;
+          color: #ffff00;
+      }
+
+      .user-message {
+          display: inline-block;
+          width: calc(100% - 50px);
+          min-height: 1em;
+          overflow: hidden;
+          outline: none;
+          resize: none;
+          padding: 8px;
+          box-sizing: border-box;
+          border: 1px solid #808000;
+          font-size: 1em;
+          line-height: 1.2;
+      }
+
+      .message svg {
+          margin-left: 3px;
+          margin-bottom: 3px;
+      }
+
+      .ai-message {
+          font-family: Arial, Helvetica, sans-serif;
+          padding: 2px;
+          margin: 0;
+          white-space: pre-wrap;
+          color: #00ff00;
+          font-size: 1em;
+          line-height: 1.2;
+      }
+
+    </style>
+  </head>
+  <body>
+    <details><summary>System</summary>
+      <div class="message">
+        <div class="user-message" id="system-message" contenteditable="plaintext-only"></div>
+      </div>
+    </details>
+
+    <input id="model" size="10" type="input" placeholder="Model...">
+    <input id="temp" size="5" type="input" placeholder="Temp...">
+    <input id="key" size="5" type="password" placeholder="API key...">
+
+    <div id="messages"></div>
+
+    <script>
+      function syncDivToLocalStorage(id) {
+          const element = document.getElementById(id);
+          element.textContent = localStorage.getItem(id)  ||  "You are knowledgeable about facts and opinions held around the world and are willing to investigate my questions from all angles and thought traditions. You do not flatter, but get to the point right away. You will tell me I'm wrong when I'm wrong, but you'll also admit when you don't know the answer to a question. No need for \"TLDR\" or a summary table; make each of your points only once.";
+          element.addEventListener("input", () => { localStorage.setItem(id, element.textContent); });
+          element.addEventListener("paste", () => { localStorage.setItem(id, element.textContent); });
+      }
+      function syncInputToLocalStorage(id) {
+          const element = document.getElementById(id);
+          element.value = localStorage.getItem(id)  ||  "";
+          element.addEventListener("input", () => { localStorage.setItem(id, element.value); });
+          element.addEventListener("paste", () => { localStorage.setItem(id, element.value); });
+      }
+      syncDivToLocalStorage("system-message");
+      syncInputToLocalStorage("model");
+      syncInputToLocalStorage("temp");
+      syncInputToLocalStorage("key");
+
+      function newUserMessage() {
+          messages.insertAdjacentHTML("beforeend", newMessageAsHTML);
+          const message = messages.lastElementChild;
+          const div = message.firstElementChild;
+          const svg = message.querySelector("svg");
+          svg.addEventListener("click", () => send(message));
+      }
+
+      function send(message) {
+          if (!model.value  ||  !temp.value  ||  !key.value) {
+              return;
+          }
+          const temperature = Number(temp.value);
+          if (temperature < 0  ||  temperature > 2) {
+              return;
+          }
+
+          while (message.nextSibling) {
+              messages.removeChild(message.nextSibling);
+          }
+          const output = message.lastElementChild;
+          output.textContent = "";
+
+          let listOfMessages = [{role: "system", content: systemMessage.textContent}];
+          for (let child of messages.children) {
+              if (child.firstElementChild.textContent.trim() != "") {
+                  listOfMessages.push({role: "user", content: child.firstElementChild.textContent});
+              }
+              if (child.lastElementChild.textContent.trim() != "") {
+                  listOfMessages.push({role: "assistant", content: child.lastElementChild.textContent});
+              }
+          }
+
+          fetch("https://api.openai.com/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": "Bearer " + key.value,
+              },
+              body: JSON.stringify({
+                  model: model.value,
+                  temperature: temperature,
+                  messages: listOfMessages,
+                  stream: true,
+              }),
+
+          }).then(async response => {
+              if (!response.ok) {
+                  throw new Error(`HTML response is ${response.status}.`);
+              }
+
+              const reader = response.body.getReader();
+              const decoder = new TextDecoder("utf-8");
+              let done = false;
+              let buffer = "";
+
+              while (!done) {
+                  const { value, d } = await reader.read();
+                  done = d;
+                  if (done) {
+                      break;
+                  }
+
+                  buffer += decoder.decode(value, { stream: true });
+
+                  let index;
+                  while ((index = buffer.indexOf("\n")) !== -1) {
+                      const line = buffer.slice(0, index).trim();
+                      buffer = buffer.slice(index + 1);
+                      if (line === ""  ||  !line.startsWith("data:")) {
+                          continue;
+                      }
+
+                      const data = line.slice(5).trim();
+                      if (data === "[DONE]") {
+                          done = true;
+                          break;
+                      }
+
+                      try {
+                          const json = JSON.parse(data);
+                          output.textContent += json.choices?.[0]?.delta?.content  ||  "";
+                      }
+                      catch (error) {
+                          throw new Error(`${error.toString()} in chunk:\n\n${data}`);
+                      }
+                  }
+              }
+
+              newUserMessage();
+
+          }).catch(error => {
+              output.textContent = error.toString();
+          });
+      }
+
+      let messages = document.getElementById("messages");
+      let systemMessage = document.getElementById("system-message");
+      let model = document.getElementById("model");
+      let temp = document.getElementById("temp");
+      let key = document.getElementById("key");
+
+      const newMessageAsHTML = `
+<div class="message">
+  <div class="user-message" contenteditable="plaintext-only"></div>
+  <svg viewBox="0 0 111.01965 111.47673" width="2em">
+    <g transform="translate(-38.425328,-84.136154)">
+      <path style="fill:#ffff00;stroke:#ffff00;stroke-width:10;stroke-linejoin:round;" d="M 52.567223,151.75928 43.425096,190.61331 144.44559,139.87452 43.425096,89.135727 l 9.142127,38.854033 91.878367,11.88476 z"/>
+    </g>
+  </svg>
+  <pre class="ai-message"></pre>
+</div>
+`;
+
+      newUserMessage();
+
+    </script>
+  </body>
+</html>
