@@ -12,6 +12,15 @@
           line-height: 1.2;
       }
 
+      #clear-all {
+          float: right;
+          background: black;
+          color: yellow;
+          font-size: 1em;
+          line-height: 1.2;
+          border: 1px solid #808000;
+      }
+
       details {
           color: #ffff00;
           margin-bottom: 10px;
@@ -70,6 +79,8 @@
     </style>
   </head>
   <body>
+    <button id="clear-all">Clear</button>
+
     <details><summary>System</summary>
       <div class="message">
         <div class="user-message" id="system-message" contenteditable="plaintext-only"></div>
@@ -100,6 +111,21 @@
       syncInputToLocalStorage("temp");
       syncInputToLocalStorage("key");
 
+      document.getElementById("clear-all").addEventListener("click", () => {
+          while (messages.firstChild) {
+              messages.removeChild(messages.firstChild);
+          }
+          newUserMessage();
+          localStorage.setItem("history", "");
+      });
+
+      function getHistory() {
+          return JSON.stringify(Array.from(messages.children).map(message => ({
+              user: message.firstElementChild.innerText,
+              assistant: message.lastElementChild.innerText,
+          })));
+      }
+
       function newUserMessage() {
           messages.insertAdjacentHTML("beforeend", newMessageAsHTML);
           const message = messages.lastElementChild;
@@ -122,6 +148,8 @@
           }
           const output = message.lastElementChild;
           output.textContent = "";
+
+          localStorage.setItem("history", getHistory());
 
           let listOfMessages = [{role: "system", content: systemMessage.textContent}];
           for (let child of messages.children) {
@@ -189,10 +217,12 @@
                   }
               }
 
+              localStorage.setItem("history", getHistory());
+
               newUserMessage();
 
           }).catch(error => {
-              output.textContent = error.toString();
+              output.textContent = `[${error.toString()}]`;
           });
       }
 
@@ -214,7 +244,26 @@
 </div>
 `;
 
-      newUserMessage();
+      const history = localStorage.getItem("history")  ||  "";
+      if (history == "") {
+          newUserMessage();
+      }
+      else {
+          for (const message of Object.values(JSON.parse(history))) {
+              if (message.user != "") {
+                  newUserMessage();
+                  const last = messages.lastElementChild;
+                  last.firstElementChild.innerText = message.user;
+                  if (message.assistant == "") {
+                      last.lastElementChild.innerText = "[No saved response.]";
+                  }
+                  else {
+                      last.lastElementChild.innerText = message.assistant;
+                  }
+              }
+          }
+          newUserMessage();
+      }
 
     </script>
   </body>
