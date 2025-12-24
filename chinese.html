@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta charset="utf-8">
+    <title>ChatGPT Chinese Tutor</title>
+    <style>
+      body {
+          font-family: Arial, Helvetica, sans-serif;
+          background: black;
+          font-size: 1em;
+          line-height: 1.2;
+      }
+
+      #clear-all {
+          float: right;
+          background: black;
+          color: yellow;
+          font-size: 1em;
+          line-height: 1.2;
+          border: 1px solid #808000;
+      }
+
+      details {
+          color: #ffff00;
+          margin-bottom: 10px;
+          font-size: 1em;
+          line-height: 1.2;
+      }
+
+      input {
+          border: 1px solid #808000;
+          background: black;
+          color: #ffff00;
+          outline: none;
+          font-size: 1em;
+          line-height: 1.2;
+      }
+
+      #messages {
+          margin-bottom: 60vh;
+      }
+
+      .message {
+          width: 100%;
+          margin-top: 10px;
+          color: #ffff00;
+      }
+
+      .user-message {
+          display: inline-block;
+          width: calc(100% - 50px);
+          min-height: 1em;
+          overflow: hidden;
+          outline: none;
+          resize: none;
+          padding: 8px;
+          box-sizing: border-box;
+          border: 1px solid #808000;
+          font-size: 1em;
+          line-height: 1.2;
+      }
+
+      .message svg {
+          margin-left: 3px;
+          margin-bottom: 3px;
+      }
+
+      .ai-message {
+          font-family: Arial, Helvetica, sans-serif;
+          padding: 2px;
+          margin: 0;
+          white-space: pre-wrap;
+          color: #00ff00;
+          font-size: 1em;
+          line-height: 1.2;
+      }
+
+    </style>
+  </head>
+  <body>
+    <button id="clear-all">Clear</button>
+
+    <details><summary>System</summary>
+      <div class="message">
+        <div class="user-message" id="system-message" contenteditable="plaintext-only"></div>
+      </div>
+    </details>
+
+    <input id="model" size="10" type="input" placeholder="Model...">
+    <input id="temp" size="5" type="input" placeholder="Temp...">
+    <input id="key" size="5" type="password" placeholder="API key...">
+
+    <div id="messages"></div>
+
+    <script>
+      const default_system_message = `You are a Chinese language tutor (simplified, not traditional characters). Your job is to generate 5 extremely short Chinese sentences for the user to translate into English and then 5 similarly short English sentences for the user to translate into Chinese. Each translation exercise is a separate prompt: do not start one exercise until the previous one is finished. All of the sentences will use *only* the HSK1 words in the list below—do not use any words that are not in that list! Also, all of the sentences will involve only 2‒3 Chinese words with a strict maximum of 4 words. When the user is translating English into Chinese, try to use mostly the same Chinese words when you construct the English sentences, so that they're fresh in mind. Each exercise should be presented as a numbered (1‒5) sentence, either Chinese or English. The user first responds with a translation. If the user's answer is correct, say so and move on to the next exercise. If it is not correct, first give a leading hint and let the user try again. If the user's second attempt is wrong, explain why and let the user follow up with questions. Do not move on to the next exercise after a user mistake until the user says they're ready. All Chinese text (yours and the user's) should be understood as being exercises, even in they're not in quotes, but English text should be quoted if it's intended as a translation. Everything that you say that is not text to be translated should be in English.
+
+Here is the list of HSK1 words, the only allowed words.
+
+的
+我
+你
+是
+了
+不
+在
+他
+我们
+好
+有
+这
+就
+会
+吗
+要
+什么
+说
+她
+想
+一
+很
+知道
+人
+吧
+那
+来
+都
+个
+能
+去
+没
+和
+他们
+到
+对
+也
+还
+做
+给
+上
+你们
+过
+没有
+看
+真
+着
+事
+怎么
+现在
+点
+呢
+不客气
+别
+走
+太
+里
+跟
+女孩儿
+告诉
+再
+听
+这里
+快
+谁
+多
+用
+时候
+下
+谢谢
+觉得
+天
+请进
+从
+先生
+找
+最
+喜欢
+大
+次
+出
+干
+们
+话
+东西
+孩子
+起来
+这些
+两
+小孩儿
+错
+还有
+小
+中
+叫
+等
+一起
+拿
+帮
+打
+爱
+时间
+年
+请
+回
+工作
+见
+
+--------------------------------------------------
+
+钱
+一样
+吃
+开
+家
+非常
+看到
+那些
+哪
+行
+朋友
+妈妈
+前
+这儿
+今天
+明白
+车
+地方
+几
+回来
+准备
+找到
+后
+爸爸
+比
+出来
+对不起
+问
+起
+还是
+住
+正
+放
+请坐
+电话
+地
+进
+新
+您
+一些
+三
+那里
+高兴
+老
+先
+买
+医生
+最后
+手
+哪儿
+女人
+名字
+认识
+坐
+喝
+记得
+写
+穿
+哪里
+送
+跑
+月
+早
+号
+小时
+重要
+别人
+男人
+岁
+出去
+看见
+打电话
+得到
+儿子
+再见
+本
+马上
+那儿
+难
+明天
+站
+多少
+晚上
+没什么
+块
+回家
+说话
+花
+她们
+有些
+门
+女儿
+小姐
+动
+女
+忙
+房子
+衣服
+睡
+回去
+晚
+坏
+水
+杯
+学校
+高
+电影
+试
+身上
+房间
+书
+球
+忘
+进来
+路
+四
+第
+进去
+听到
+正在
+笑
+那边
+远
+床
+歌
+唱
+别的
+学
+关
+五
+男
+帮忙
+国家
+间
+分
+医院
+半
+少
+没关系
+真的
+教
+重
+飞机
+打开
+早上
+二
+电视
+回到
+身体
+读
+这边
+家里
+昨天
+大学
+记
+口
+日
+休息
+回答
+外
+睡觉
+子
+六
+飞
+老师
+不用
+星期
+生气
+生日
+病
+包
+哥哥
+票
+手机
+忘记
+十
+楼
+记住
+洗
+干什么
+病人
+弟弟
+见面
+来到
+一会儿
+妹妹
+电脑
+认真
+热
+差
+饿
+学生
+下午
+动作
+慢
+家人
+坐下
+白
+姐姐
+女朋友
+一半
+西
+一边
+听见
+介绍
+字
+男朋友
+肉
+有时候
+开玩笑
+路上
+学习
+累
+汽车
+冷
+下次
+班
+课
+上班
+山
+干净
+树
+吃饭
+旁边
+八
+毛
+常
+中国
+七
+菜
+元
+奶奶
+去年
+开车
+风
+饭
+今年
+左
+地点
+右
+女生
+上次
+桌子
+机场
+爷爷
+晚饭
+中间
+唱歌
+电
+火车
+不对
+地上
+午饭
+有的
+东
+雨
+好看
+车上
+天气
+茶
+上学
+九
+商店
+好吃
+地图
+面包
+页
+南
+男生
+考试
+没事儿
+左边
+同学
+北
+请问
+钱包
+百
+网上
+贵
+洗手间
+楼上
+一点儿
+生病
+最好
+国
+在家
+学院
+牛奶
+右边
+楼下
+门口
+下班
+上课
+考
+起床
+奶
+图书馆
+走路
+常常
+鸡蛋
+关上
+饭店
+中午
+明年
+老人
+读书
+工人
+上午
+水果
+白天
+零
+打球
+开会
+知识
+上车
+车站
+杯子
+有用
+日期
+哪些
+早饭
+机票
+玩儿
+星期天
+小朋友
+新年
+爱好
+商场
+是不是
+放学
+好听
+有名
+中学
+马路
+门票
+小学
+上网
+一块儿
+电视机
+外国
+渴
+国外
+书店
+下车
+下雨
+大学生
+电影院
+路口
+车票
+不大
+北边
+放假
+南边
+外边
+西边
+看病
+米饭
+请假
+北京
+中文
+里边
+东边
+下课
+半天
+前天
+上边
+本子
+后边
+书包
+后天
+好玩儿
+星期日
+课本
+外语
+打车
+小学生
+下边
+中学生
+汉语
+包子
+前边
+教学楼
+汉字
+网友
+听写
+课文
+半年
+面条儿
+男孩儿
+一下儿
+`;
+
+      function syncDivToLocalStorage(id) {
+          const element = document.getElementById(id);
+          element.innerHTML = localStorage.getItem(id)  ||  default_system_message;
+          element.addEventListener("input", () => { localStorage.setItem(id, element.innerHTML); });
+          element.addEventListener("paste", () => { localStorage.setItem(id, element.innerHTML); });
+      }
+      function syncInputToLocalStorage(id) {
+          const element = document.getElementById(id);
+          element.value = localStorage.getItem(id)  ||  "";
+          element.addEventListener("input", () => { localStorage.setItem(id, element.value); });
+          element.addEventListener("paste", () => { localStorage.setItem(id, element.value); });
+      }
+      syncDivToLocalStorage("system-message");
+      syncInputToLocalStorage("model");
+      syncInputToLocalStorage("temp");
+      syncInputToLocalStorage("key");
+
+      document.getElementById("clear-all").addEventListener("click", () => {
+          while (messages.firstChild) {
+              messages.removeChild(messages.firstChild);
+          }
+          newUserMessage();
+          localStorage.setItem("history", "");
+      });
+
+      function getHistory() {
+          return JSON.stringify(Array.from(messages.children).map(message => ({
+              user: message.firstElementChild.innerHTML,
+              assistant: message.lastElementChild.innerHTML,
+          })));
+      }
+
+      function newUserMessage() {
+          messages.insertAdjacentHTML("beforeend", newMessageAsHTML);
+          const message = messages.lastElementChild;
+          const div = message.firstElementChild;
+          const svg = message.querySelector("svg");
+          svg.addEventListener("click", () => send(message));
+      }
+
+      function send(message) {
+          if (!model.value  ||  !temp.value  ||  !key.value) {
+              return;
+          }
+          const temperature = Number(temp.value);
+          if (temperature < 0  ||  temperature > 2) {
+              return;
+          }
+
+          while (message.nextSibling) {
+              messages.removeChild(message.nextSibling);
+          }
+          const output = message.lastElementChild;
+          output.innerHTML = "";
+
+          localStorage.setItem("history", getHistory());
+
+          let listOfMessages = [{role: "system", content: systemMessage.innerHTML.split("---")[0]}];
+          for (let child of messages.children) {
+              if (child.firstElementChild.innerHTML.trim() != "") {
+                  listOfMessages.push({role: "user", content: child.firstElementChild.innerHTML});
+              }
+              if (child.lastElementChild.innerHTML.trim() != "") {
+                  listOfMessages.push({role: "assistant", content: child.lastElementChild.innerHTML.replace(/<span style="font-size:200%;">([\s\S]*?)<\/span>/g, '$1')});
+              }
+          }
+
+          fetch("https://api.openai.com/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": "Bearer " + key.value,
+              },
+              body: JSON.stringify({
+                  model: model.value,
+                  temperature: temperature,
+                  messages: listOfMessages,
+                  stream: true,
+              }),
+
+          }).then(async response => {
+              if (!response.ok) {
+                  throw new Error(`HTML response is ${response.status}.`);
+              }
+
+              const reader = response.body.getReader();
+              const decoder = new TextDecoder("utf-8");
+              let done = false;
+              let buffer = "";
+
+              while (!done) {
+                  const { value, d } = await reader.read();
+                  done = d;
+                  if (done) {
+                      break;
+                  }
+
+                  buffer += decoder.decode(value, { stream: true });
+
+                  let index;
+                  while ((index = buffer.indexOf("\n")) !== -1) {
+                      const line = buffer.slice(0, index).trim();
+                      buffer = buffer.slice(index + 1);
+                      if (line === ""  ||  !line.startsWith("data:")) {
+                          continue;
+                      }
+
+                      const data = line.slice(5).trim();
+                      if (data === "[DONE]") {
+                          done = true;
+                          break;
+                      }
+
+                      try {
+                          const json = JSON.parse(data);
+                          const text = json.choices?.[0]?.delta?.content  ||  "";
+                          output.innerHTML += text.replace(/([\u3400-\u9FFF]+)/g, '<span style="font-size:200%;">$1</span>');
+                      }
+                      catch (error) {
+                          throw new Error(`${error.toString()} in chunk:\n\n${data}`);
+                      }
+                  }
+              }
+
+              localStorage.setItem("history", getHistory());
+
+              newUserMessage();
+
+          }).catch(error => {
+              output.innerHTML = `[${error.toString()}]`;
+          });
+      }
+
+      let messages = document.getElementById("messages");
+      let systemMessage = document.getElementById("system-message");
+      let model = document.getElementById("model");
+      let temp = document.getElementById("temp");
+      let key = document.getElementById("key");
+
+      const newMessageAsHTML = `
+<div class="message">
+  <div class="user-message" contenteditable="plaintext-only"></div>
+  <svg viewBox="0 0 111.01965 111.47673" width="2em">
+    <g transform="translate(-38.425328,-84.136154)">
+      <path style="fill:#ffff00;stroke:#ffff00;stroke-width:10;stroke-linejoin:round;" d="M 52.567223,151.75928 43.425096,190.61331 144.44559,139.87452 43.425096,89.135727 l 9.142127,38.854033 91.878367,11.88476 z"/>
+    </g>
+  </svg>
+  <pre class="ai-message"></pre>
+</div>
+`;
+
+      const history = localStorage.getItem("history")  ||  "";
+      if (history == "") {
+          newUserMessage();
+      }
+      else {
+          for (const message of Object.values(JSON.parse(history))) {
+              if (message.user != "") {
+                  newUserMessage();
+                  const last = messages.lastElementChild;
+                  last.firstElementChild.innerHTML = message.user;
+                  if (message.assistant == "") {
+                      last.lastElementChild.innerHTML = "[No saved response.]";
+                  }
+                  else {
+                      last.lastElementChild.innerHTML = message.assistant;
+                  }
+              }
+          }
+          newUserMessage();
+      }
+
+    </script>
+  </body>
+</html>
