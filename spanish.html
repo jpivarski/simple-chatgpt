@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta charset="utf-8">
+    <title>ChatGPT Spanish Tutor</title>
+    <style>
+      body {
+          font-family: Arial, Helvetica, sans-serif;
+          background: black;
+          font-size: 1em;
+          line-height: 1.2;
+      }
+
+      button {
+          background: black;
+          color: yellow;
+          font-size: 1em;
+          line-height: 1.2;
+          border: 1px solid #808000;
+      }
+
+      #clear-all {
+          float: right;
+      }
+
+      details {
+          color: #ffff00;
+          margin-bottom: 10px;
+          font-size: 1em;
+          line-height: 1.2;
+      }
+
+      h1 {
+          color: #ffff00;
+          margin: 0;
+      }
+
+      input {
+          border: 1px solid #808000;
+          background: black;
+          color: #ffff00;
+          outline: none;
+          font-size: 1em;
+          line-height: 1.2;
+      }
+
+      #messages {
+          margin-bottom: 60vh;
+      }
+
+      .message {
+          width: 100%;
+          margin-top: 10px;
+          color: #ffff00;
+      }
+
+      .user-message {
+          display: inline-block;
+          width: calc(100% - 50px - 50px);
+          min-height: 1em;
+          overflow: hidden;
+          outline: none;
+          resize: none;
+          padding: 8px;
+          box-sizing: border-box;
+          border: 1px solid #808000;
+          font-size: 1em;
+          line-height: 1.2;
+      }
+
+      .message svg {
+          margin-left: 3px;
+          margin-bottom: 3px;
+      }
+
+      .ai-message {
+          font-family: Arial, Helvetica, sans-serif;
+          padding: 2px;
+          margin: 0;
+          white-space: pre-wrap;
+          color: #00ff00;
+          font-size: 1em;
+          line-height: 1.2;
+      }
+
+    </style>
+  </head>
+  <body>
+    <button id="clear-all">Clear</button>
+
+    <h1>Spanish tutor</h1>
+
+    <details><summary>System</summary>
+      <div class="message">
+        <div class="user-message" id="system-message" contenteditable="plaintext-only"></div>
+      </div>
+    </details>
+
+    <input id="recording" size="5" type="input" placeholder="Recording...">
+    <input id="model" size="5" type="input" placeholder="Model...">
+    <input id="temp" size="5" type="input" placeholder="Temp...">
+    <input id="key" size="5" type="password" placeholder="API key...">
+
+    <div style="margin-top: 5px;">
+      <input id="theme" size="20" type="input" placeholder="Theme..." style="margin-right: 5px;"><button id="new-theme">New</button>
+    </div>
+
+    <div id="messages"></div>
+
+    <script>
+      const default_system_message = `You are a Spanish language tutor. Your job is to generate 5 easy, present-tense, A-1 level Spanish sentences (no more than 5 words!) for the user to translate into English and then 5 similar English sentences for the user to translate into Spanish. Each translation exercise is a separate prompt: do not start one exercise until the previous one is finished. When the user is translating English into Spanish, use either cognates or some of the same Spanish words when you construct the English sentences, so that they're fresh in mind. Each exercise should be presented as a numbered (1‒5) sentence, either Spanish or English. When the user is translating from Spanish to English, they will first repeat the Spanish before translating to English, often with the pattern “[Spanish sentence] means [English sentence].” If the user's repetition and translation are both correct, say so and move on to the next exercise. If they are not correct, first give a leading hint and let the user try again. If the user's second attempt is wrong, explain why and let the user follow up with questions. Do not move on to the next exercise after a user mistake until the user says they're ready. When the user is translating from English to Spanish, they will only provide the Spanish. All of your text (Spanish or English) intended as exercises should be between round quotation marks: “ and ”. Everything that you say that is not text to be translated should be in English. It's fine if the user's text doesn't include quotation marks or uses wrong capitalization or unaccented characters. The theme for the sentences should be: `;
+
+      const themes = [
+          "A day at the beach",
+          "Going to the supermarket",
+          "Making breakfast",
+          "Ordering food in a café",
+          "Visiting the library",
+          "My favorite animal",
+          "Introducing myself",
+          "Meeting a new friend",
+          "My family members",
+          "Getting dressed in the morning",
+          "My house",
+          "My classroom",
+          "Riding a bicycle",
+          "Asking for directions",
+          "Visiting the zoo",
+          "Playing soccer",
+          "A picnic in the park",
+          "Grocery shopping",
+          "Daily routine",
+          "My bedroom",
+          "Going to the dentist",
+          "At the doctor’s office",
+          "Talking about hobbies",
+          "My favorite book",
+          "Buying clothes",
+          "My best friend",
+          "Asking about the weather",
+          "A birthday party",
+          "A walk in the city",
+          "Learning to swim",
+          "My favorite food",
+          "My pets",
+          "My favorite sport",
+          "My neighborhood",
+          "Taking a bus",
+          "Visiting grandparents",
+          "Planting a tree",
+          "My favorite color",
+          "What’s in my backpack",
+          "My school",
+          "Describing clothes",
+          "Going to the movies",
+          "Packing a suitcase",
+          "Going to the pharmacy",
+          "My favorite song",
+          "My favorite movie",
+          "Telling the time",
+          "Buying a gift",
+          "Visiting a museum",
+          "Walking in the forest",
+          "Renting a bike",
+          "At the bakery",
+          "At the butcher shop",
+          "Washing hands",
+          "My favorite teacher",
+          "Weekend plans",
+          "School subjects",
+          "Doing homework",
+          "Cleaning my room",
+          "Sending a letter",
+          "Making a phone call",
+          "Going to the hairdresser",
+          "Visiting the countryside",
+          "Going camping",
+          "Playing chess",
+          "Computer games",
+          "Riding the subway",
+          "At the train station",
+          "Buying a train ticket",
+          "Taking pictures",
+          "Flying on a plane",
+          "My favorite holiday",
+          "Wrapping presents",
+          "A wedding celebration",
+          "Visiting a friend’s house",
+          "Feeding the pet",
+          "My favorite fruit",
+          "My favorite vegetable",
+          "What’s for dinner?",
+          "Describing a photo",
+          "At the flower shop",
+          "My grandmother’s kitchen",
+          "My favorite app",
+          "Walking the dog",
+          "At the swimming pool",
+          "My favorite place",
+          "Sunday mornings",
+          "Taking a bath",
+          "Describing my town",
+          "At the post office",
+          "Riding a horse",
+          "Nature walk",
+          "Birds in the park",
+          "Clothes shopping with mom",
+          "A rainy day",
+          "Building a sandcastle",
+          "Playtime at the playground",
+          "Soccer practice",
+          "Reading a comic",
+          "Going to the barber",
+          "A school trip",
+          "My birthday wish",
+          "My daily chores",
+          "Playing cards",
+          "Drawing and painting",
+          "A cooking class",
+          "Singing in a choir",
+          "Setting the table",
+          "Cleaning up after lunch",
+          "A lemonade stand",
+          "Winning a prize",
+          "Finding a lost toy",
+          "Peanut butter sandwich",
+          "A snowball fight",
+          "Learning to count",
+          "Counting coins",
+          "Shopping for shoes",
+          "Brushing teeth",
+          "At the hospital",
+          "At the playground",
+          "Riding a scooter",
+          "Taking a taxi",
+          "Writing a postcard",
+          "A science project",
+          "A math test",
+          "My favorite season",
+          "Going on a picnic",
+          "Making a new friend",
+          "My favorite game",
+          "My favorite dessert",
+          "My morning routine",
+          "At the gym",
+          "Learning a song",
+          "Collecting stickers",
+          "Catching a bus",
+          "Taking out the trash",
+          "A favorite television show",
+          "Springtime flowers",
+          "Fall leaves",
+          "Celebrating New Year’s",
+          "Meeting a celebrity",
+          "Trying a new food",
+          "Playing in the yard",
+          "Visiting the dentist",
+          "Grandpa’s stories",
+          "Building a model",
+          "Going to the circus",
+          "Making cookies",
+          "Coloring a picture",
+          "Dancing at home",
+          "Riding a skateboard",
+          "Cheering at a sports event",
+          "At the pet store",
+          "Volunteering",
+          "Family dinner",
+          "Shopping at a mall",
+          "Making a wish",
+          "Sunday breakfast",
+          "Watching cartoons",
+          "Organizing a party",
+          "Laughing with friends",
+          "Magic tricks",
+          "Learning to write",
+          "Practicing the alphabet",
+          "Making friendship bracelets",
+          "Helping in the garden",
+          "Day at the aquarium",
+          "Choosing a book",
+          "Sharing toys",
+          "School assembly",
+          "My favorite ice cream",
+          "A reading contest",
+          "Jumping rope",
+          "Making a paper plane",
+          "A new pet",
+          "Playing hide-and-seek",
+          "Wearing glasses",
+          "Asking for help",
+          "Baking a cake",
+          "Morning exercises",
+          "Fresh juice",
+          "Going for a run",
+          "Dreaming at night",
+          "Watching the stars",
+          "Camping under the stars",
+          "Making a snowman",
+          "Sledding",
+          "Birthday balloons",
+          "A visit to the nurse",
+          "Visiting the dentist",
+          "Pet adoption",
+          "Listening to music",
+          "Driving a car",
+          "At the gas station",
+          "Cleaning the car",
+          "Family photos",
+          "My favorite animal at the zoo",
+          "Learning to play an instrument",
+          "Practicing yoga",
+          "At the optician’s",
+          "First day at school",
+          "Wearing a uniform",
+          "Playing in the snow",
+          "Bathing a pet",
+          "Watering plants",
+          "Starting a collection",
+          "Sorting laundry",
+          "My favorite month",
+          "Celebrating Halloween",
+          "Picking apples",
+          "A school concert",
+          "Family barbecue",
+          "Sunday walk",
+          "Shopping at the market",
+          "Strawberry picking",
+          "Ice skating",
+          "Hanging out with siblings",
+          "Babysitting",
+          "Going to bed",
+          "Making a scrapbook",
+          "My favorite city",
+          "Attending a festival",
+          "Community clean-up",
+          "Learning numbers",
+          "Watching fireworks",
+          "Visiting a new country",
+          "Trying on costumes",
+          "Baking bread",
+          "Visiting the fire station",
+          "Donating clothes",
+          "Having a check-up",
+          "Writing a poem",
+          "Recycling",
+          "Making the bed",
+          "My favorite instrument",
+          "Birdwatching",
+          "Helping a neighbor",
+          "A day at the amusement park",
+          "Playground games",
+          "Choosing a birthday cake",
+          "Making a salad",
+          "Reading the newspaper",
+          "Building a fort",
+          "Rollerblading",
+          "Doing a puzzle",
+          "Drawing a map",
+          "Visiting an art gallery",
+          "Helping at home",
+          "First snow",
+          "Cutting paper",
+          "My lucky number",
+          "School fair",
+          "Planting flowers",
+          "Eating at a food truck",
+          "Sharing lunch",
+          "Making a milkshake",
+          "Guessing games",
+          "Playful pets",
+          "New shoes",
+          "Collecting coins",
+          "Making crafts",
+          "Buckling a seatbelt",
+          "Fish in the pond",
+          "Spelling my name",
+          "Family reunion",
+          "Going to the optometrist",
+          "A haunted house",
+          "Storytime",
+          "Building blocks",
+          "Celebrating Easter",
+          "Finding seashells",
+          "A school dance",
+          "Going sledding",
+          "Blowing bubbles",
+          "Drawing animals",
+          "Planting seeds",
+          "Making soup",
+          "A summer camp",
+          "Friendship day",
+          "Saying thank you",
+          "Cooking pancakes",
+          "Going to church",
+          "Listening to a story",
+          "Drinking hot chocolate",
+          "My dream job",
+          "Movie night",
+          "Caring for a plant",
+          "Morning walk",
+          "Singing karaoke",
+          "School library",
+          "The alphabet",
+          "Playing in the sandpit",
+          "First snowflakes",
+          "Playing with building blocks",
+          "Helping in the kitchen",
+          "My favorite neighbor",
+          "Napping in the afternoon",
+          "Going to a party",
+          "Dancing at school",
+          "Making a pizza",
+          "Fireworks at the park",
+          "Watching a parade",
+          "Stringing beads",
+          "Packing for a trip",
+          "Finding lost keys",
+          "Going to the car wash",
+          "Losing a tooth",
+          "School supplies",
+          "Fruit salad",
+          "Playing with dolls",
+          "Learning shapes",
+          "Spinning a top",
+          "Baking cupcakes",
+          "My favorite holiday tradition",
+          "Visiting a farm",
+          "Seeing the doctor",
+          "Building a snow fort",
+          "My favorite store",
+          "Taking medicine",
+          "My favorite vegetable soup",
+          "Zipping a jacket",
+          "Drawing my family",
+          "Story writing",
+          "Visiting the botanical garden",
+          "Tasting new food",
+          "Rainy day activities",
+          "Making popcorn",
+          "Wearing a raincoat",
+          "Fall festival",
+          "Back to school",
+          "Collecting shells",
+          "At the community pool",
+          "Arranging flowers",
+          "Setting an alarm",
+          "Trying a new recipe",
+          "Playing ping pong",
+          "Watering the lawn",
+          "Donating toys",
+          "Visiting a castle",
+          "Old family photos",
+          "Jumping in puddles",
+          "Family picnic",
+          "Crafting paper animals",
+          "Celebrating Earth Day",
+          "First time on a plane",
+          "Making a sandcastle",
+          "Chasing butterflies",
+          "Making lemonade",
+          "School lunchroom",
+          "Raking leaves",
+          "Writing thank you notes",
+          "Preparing a smoothie",
+          "Making tea",
+          "My favorite magazine",
+          "Collecting buttons",
+          "Going on a nature trail",
+          "Helping at a bake sale",
+          "Puppy training",
+          "Walking barefoot",
+          "Reading bedtime stories",
+          "Water balloon fight",
+          "Going for ice cream",
+          "Attending a wedding",
+          "Birthday invitations",
+          "Playing with marbles",
+          "Family breakfast",
+          "Visiting a city park",
+          "Playing musical chairs",
+          "Helping set the table",
+          "Cleaning windows",
+          "Drawing cartoons",
+          "At the toy store",
+          "Listening to the radio",
+          "Paddling a canoe",
+          "Sharing a secret",
+          "Farm animals",
+          "Counting stars at night",
+          "Getting a haircut",
+          "Tasting new fruits",
+          "Playing with clay",
+          "Writing in a diary",
+          "Buying a backpack",
+          "Swings and slides",
+          "Taking photos of flowers",
+          "Blowing out birthday candles",
+          "At the ice cream parlor",
+          "Doing the laundry",
+          "Knitting a scarf",
+          "Collecting stamps",
+          "Trying origami",
+          "My favorite teacher",
+          "My school bag",
+          "Visiting a market",
+          "Collecting action figures",
+          "Baking cookies",
+          "Making a friendship card",
+          "School fundraising event",
+          "Morning greetings",
+          "Designing an invitation",
+          "Trying skateboarding",
+          "Exploring a cave",
+          "Family movie night",
+          "Tasting local food",
+          "Playing hopscotch",
+          "Wearing rubber boots",
+          "Sunny weather",
+          "In the schoolyard",
+          "Celebrating Father’s Day",
+          "Playing with a frisbee",
+          "Visiting a neighbor",
+          "Picking berries",
+          "Making jam",
+          "Finding a caterpillar",
+          "Attending a class reunion",
+          "Crafting a birdhouse",
+          "Visiting the vet",
+          "My favorite snack",
+          "Making a snow angel",
+          "Trying out for a team",
+          "My favorite dessert",
+          "Choosing a Halloween costume",
+          "Watching cartoon movies",
+          "Collecting leaves",
+          "Practicing a dance",
+          "My favorite outdoor game",
+          "Eating pizza",
+          "Camping with family",
+          "Writing a thank you note",
+          "My favorite pair of shoes",
+          "Building a paper airplane",
+          "Visiting a lighthouse",
+          "My favorite dish",
+          "Star gazing",
+          "Creating a family tree",
+          "Doing magic tricks",
+          "Taking dance lessons",
+          "Playing checkers",
+          "Filling a bird feeder",
+          "Holiday decorations",
+          "First day at camp",
+          "Painting a mural",
+          "Cutting a birthday cake",
+          "Sending a gift",
+          "Describing my pet",
+          "Playing catch",
+          "Visiting an ice rink",
+          "Sharing a joke",
+          "Practicing handwriting",
+          "Cleaning the bathroom",
+          "Making a fruit basket",
+          "Visiting the playground",
+          "Attending a birthday party",
+          "Weekend sports",
+          "Playing in the rain",
+          "Picking flowers",
+          "My favorite storybook",
+          "Feeding ducks",
+          "Beach picnic",
+          "Visiting the farmers market",
+          "Ice cream flavors",
+          "Singing a lullaby",
+          "Sorting recyclables",
+          "Watering flowers",
+          "Writing a shopping list",
+          "Playdough fun",
+          "Looking for tadpoles",
+          "Drawing with crayons",
+          "Play kitchen",
+          "Learning to skip",
+          "Counting puppies",
+          "Making shadow puppets",
+          "Card games",
+          "Family selfie",
+          "Riding a carousel",
+          "Playing charades",
+          "Growing a plant",
+          "Building puzzles",
+          "Raising butterflies",
+          "Mask making",
+          "Building a dollhouse",
+          "Going on a treasure hunt",
+          "Family photo album",
+          "School bus ride",
+          "Singing with friends",
+          "Visit to the aquarium",
+          "Collecting pebbles",
+          "Learning to whistle",
+          "Going to a magic show",
+          "Library story hour",
+          "Building sandcastles",
+          "Sprinkler fun",
+          "Visit to a friend’s house",
+          "New year celebrations",
+          "Beach volleyball",
+          "Drawing a rainbow",
+          "Cooking rice",
+          "My favorite cartoon character",
+          "At the petting zoo",
+          "Trying gymnastics",
+          "Doing jumping jacks",
+          "Jumping in leaves",
+          "My favorite poem",
+          "Pencil case",
+          "Sharpening pencils",
+          "Folding paper boats",
+          "Painting rocks",
+          "Making snowflakes",
+          "School garden",
+          "Apple picking",
+          "Counting cars",
+          "Going to a carnival",
+          "Shoveling snow",
+          "Playing in a treehouse",
+          "Eating soup",
+          "Buttering bread",
+          "Storytelling",
+          "My favorite park",
+          "New pajamas",
+          "Helping with cooking",
+          "Shell collecting",
+          "Writing my address",
+          "Feeding fish",
+          "Playing with cousins",
+          "Spring cleaning",
+          "Choosing a pet",
+          "Celebrating Mother’s Day",
+          "Measuring my height",
+          "Grocery list",
+          "Birthday candles",
+          "Learning new words",
+          "Pencil drawing",
+          "Coloring Easter eggs",
+          "Guessing animal sounds",
+          "My favorite lullaby",
+          "Construction site visit",
+          "Watching birds",
+          "Reading a fairy tale",
+          "Helping a sibling",
+          "Shopping for school supplies",
+          "Describing my kitchen",
+          "Roasting marshmallows",
+          "Blanket fort",
+          "Skipping stones",
+          "Having a sleepover",
+          "Drawing shapes",
+          "Cinnamon rolls",
+          "Stamping artworks",
+          "Cooking pasta",
+          "Counting blocks",
+          "Watching a sunset",
+          "Playing on a slide",
+          "Filling water bottles",
+          "Tying shoelaces",
+          "Climbing trees",
+          "Afternoon nap",
+          "School lunchbox",
+          "Easter egg hunt",
+          "Counting money",
+          "Describing a sunset",
+          "Sorting colors",
+          "A mountain hike",
+          "Making smoothies",
+          "In the waiting room",
+          "My favorite museum",
+          "Board games",
+          "Growing tomatoes",
+          "Playing ring toss",
+          "Learning to sew",
+          "Paper hats",
+          "Getting wet in the rain",
+          "Building Lego models",
+          "Making promises",
+          "Catching frogs",
+          "Writing an email",
+          "Sudoku puzzles",
+          "My favorite vegetable",
+          "Watermelon slice",
+          "Harvest festival",
+          "Bedtime routine",
+          "Cleaning up toys",
+          "Sweeping the porch",
+          "Raking the yard",
+          "A rainy afternoon",
+          "Doing crafts with family",
+          "Visiting a science museum",
+          "Arranging books",
+          "Throwing a ball",
+          "Making soup",
+          "Going to the art class",
+          "Watching fish in an aquarium",
+          "Imaginary friends",
+          "Storybook characters",
+          "Getting ready for school",
+          "Going on an adventure",
+          "Making a collage",
+          "Doing yoga",
+          "Street festival",
+          "Giving a present",
+          "Writing a story",
+          "Decorating a room",
+          "Morning bike ride",
+          "Writing a postcard",
+          "Dancing at a festival",
+          "Visiting a friend",
+          "Lunch with family",
+          "Arranging puzzle pieces",
+          "Blowing a whistle",
+          "Spring picnic",
+          "Building a snowman",
+          "Wartching cartoons",
+          "Flower picking",
+          "Playing tug of war",
+          "Counting candies",
+          "Finger painting",
+          "Washing the dog",
+          "Making a wish list",
+          "Finding a feather",
+          "Bicycle race",
+          "Drawing a castle",
+          "Making homemade gifts",
+          "Picking pumpkins",
+          "Finding a four-leaf clover",
+          "Watching the sunrise",
+          "Looking for constellations",
+          "Making a paper crown",
+          "Making mashed potatoes",
+          "Preparing cereal",
+          "Coloring mandalas",
+          "Making bookmarks",
+          "Drawing vehicles",
+          "Helping set up a party",
+          "Building a bridge out of blocks",
+          "Eating a picnic in the backyard",
+          "Family road trip",
+          "Choosing toppings for pizza",
+          "Wearing a costume",
+          "Watering house plants",
+          "Learning to read",
+          "Birthday decorations",
+          "Writing an invitation",
+          "Telling a joke",
+          "Making a treasure map",
+          "Drawing flowers",
+          "Creating a weather chart",
+          "Counting birds",
+          "Going to the mountains",
+          "Sailing a toy boat",
+          "Collecting stickers",
+          "Writing in a notebook",
+          "At the police station",
+          "Making a cake for someone",
+          "Drawing a cityscape",
+          "Baking muffins",
+          "Sidewalk chalk art",
+          "Practicing spelling",
+          "Making a calendar",
+          "Describing the moon",
+          "Playing flashlight tag",
+          "Family cleaning day",
+          "Celebrating Independence Day",
+          "Building a sand volcano",
+          "Moose in the forest",
+          "Moving to a new house",
+          "Making a shopping list",
+          "Story about my dreams",
+          "Sharing crayons",
+          "Advent calendar",
+          "Making hot chocolate",
+          "Blossom trees",
+          "Rushing for the school bus",
+          "Drawing fruits",
+          "Dog walking",
+          "My favorite candy",
+          "Siblings playing",
+          "Counting steps",
+          "Making pancakes",
+          "A frog in the garden",
+          "Choosing new glasses",
+          "Practicing numbers",
+          "Story about a cat",
+          "Bouncing a ball",
+          "Making a kite",
+          "A sunny afternoon",
+          "Hanging a picture",
+          "Drawing my friends",
+          "Breakfast at grandma’s",
+          "Watering potatoes",
+          "Going to the cleaners",
+          "My favorite soup",
+          "Sharing snacks",
+          "Practicing days of the week",
+          "Picking grapes",
+          "Jumping jacks",
+          "Umbrella in the rain",
+          "Making paper snowflakes",
+          "A trip to the farm",
+          "Soft toys",
+          "Pajama day",
+          "My favorite blanket",
+          "Story about a dog",
+          "Raincoat weather",
+          "Visiting the zoo with classmates",
+          "Picking dandelions",
+          "Birthday cake flavors",
+          "Watching clouds",
+          "Folding paper fans",
+          "Practicing the months",
+          "Playing snake and ladder",
+          "Favorite cartoon",
+          "Crafting a calendar",
+          "My new lunchbox",
+          "Dressing for winter",
+          "Counting coins",
+          "School bell rings",
+          "Dinner guests",
+          "Watering the garden",
+          "A school assembly",
+          "Planting beans",
+          "Helping in the yard",
+          "Making face paint",
+          "Christmas morning",
+          "Building a toy car",
+          "Making animal sounds",
+          "Hopping like a frog",
+          "My favorite playground equipment",
+          "Spinning tops",
+          "Counting books",
+          "Helping a new student",
+          "Packing my bag",
+          "Doing house chores",
+          "Petting zoo",
+          "Drawing a train",
+          "Sorting socks",
+          "Making a necklace",
+          "Decorating the Christmas tree",
+          "First day at preschool",
+          "Counting apples",
+          "Walking in the rain",
+          "Making orange juice",
+          "Writing a book title",
+          "Choosing a backpack",
+          "Visiting the playground",
+          "Watering sunflowers",
+          "Describing a painting",
+          "Washing windows",
+          "Skating in the park",
+          "Building towers with blocks",
+          "Finding a worm",
+          "Drawing a house",
+          "Fruit basket",
+          "Practicing months of the year",
+          "Making a puppet",
+          "Sharing umbrellas",
+          "Doing sit-ups",
+          "Collecting insects",
+          "Making pizza dough",
+          "Watching a puppet show",
+          "Drawing stars",
+          "Painting with brushes",
+          "Making cheescake",
+          "Wearing slippers",
+          "Helping grandma cook",
+          "Story about my mom",
+          "Family shopping",
+          "Building bird nests",
+          "Collecting bottle caps",
+          "Stamping leaves",
+          "Drawing a farm",
+          "Kicking a soccer ball",
+          "Making popsicles",
+          "At the candy store",
+          "Giving a high five",
+          "My favorite superhero",
+          "Sorting laundry",
+          "Mopping the floor",
+          "Fall harvest",
+          "Making a necklace",
+          "My favorite hat",
+          "Dusting shelves",
+          "Counting frogs in the pond",
+          "In the vegetable garden",
+          "Halloween party",
+          "Preparing popcorn",
+          "Learning a tongue twister",
+          "Eating watermelon",
+          "Playing with siblings",
+          "My favorite rainy day activity",
+          "Attending a costume party",
+          "Carving a pumpkin",
+          "Making gingerbread cookies",
+          "Holiday card",
+          "Singing Christmas songs",
+          "Snowball fight",
+          "Making paper lanterns",
+          "Feeding a baby",
+          "Practicing times tables",
+          "Family story night",
+          "Watching fireflies",
+          "Leaf collection",
+          "Animal parade",
+          "Playing dominoes",
+          "Decorating cupcakes",
+          "Farmer’s market visit",
+          "Family summer trip",
+          "Organizing toys",
+          "Cutting fruit",
+          "Water gun battle",
+          "Paper folding",
+          "Counting butterflies",
+          "Picking up litter",
+          "My favorite ice cream topping",
+          "Breakfast in bed",
+          "Petting a cat",
+          "Family walk",
+          "Learning the alphabet",
+          "Reading comic books",
+          "Drawing fish",
+          "Birthday surprise",
+          "Music class",
+          "My first bike",
+          "Family barbecue",
+          "Hanging stockings",
+          "Making lemonade",
+          "Counting ducks",
+          "Family traditions",
+          "My favorite bedtime story",
+          "Bath bubbles",
+          "Pruning plants",
+          "Looking for rainbows",
+          "Making a card for Dad",
+          "My favorite friend",
+          "Dancing in the living room",
+          "Mixing dough",
+          "Stretching in the morning",
+          "Watching snowflakes fall",
+          "Writing a list of friends",
+          "Choosing crayons",
+          "Practicing spelling my name",
+          "Taking out the trash",
+          "Celebrating a holiday",
+          "Tapping a drum",
+          "Drawing a birthday card",
+          "My favorite music",
+          "Paper airplane contest",
+          "Laptop at school",
+          "Organizing drawers",
+          "In the toy room",
+          "Cleaning up after a party",
+          "Wearing new clothes",
+          "Counting clouds",
+          "Reading a menu",
+          "Cutting paper figures",
+          "Washing fruit",
+          "School art contest",
+          "Making a piñata",
+          "Sibling’s birthday",
+          "Practicing addresses",
+          "School uniform",
+          "Playing with a puppy",
+          "Packing vegetables",
+          "Drawing shapes",
+          "Coloring animals",
+          "Sorting shapes",
+          "Family reunion picnic",
+          "Celebrating with cake",
+          "Taking a bath",
+          "Eating breakfast cereal",
+          "Doing jumping jacks",
+          "Story about my pet",
+          "Baking bread",
+          "A scavenger hunt",
+          "Counting bees",
+          "Rolling out cookie dough",
+          "Learning “hello” in languages",
+          "Organizing a bookshelf",
+          "Drawing a garden",
+          "Making playdough",
+          "Rainbow drawings",
+          "Eating soup",
+          "Washing my hands",
+          "Gifting a book",
+          "Drawing my school",
+          "Balloons everywhere",
+          "Practicing the alphabet",
+          "Writing my phone number",
+          "Petting a rabbit",
+          "School play",
+          "After school snack",
+          "Drinking water",
+          "Visiting cousins",
+          "Family tree craft",
+          "Counting seeds",
+          "Drawing with chalk",
+          "At the library",
+          "Coloring holiday cards",
+          "Making a sandwich",
+          "Watching TV",
+          "Brushing hair",
+          "Practicing numbers",
+          "Drawing shapes on paper",
+          "Sharing a pillow",
+          "Morning stretches",
+          "Practicing climbing stairs",
+          "Watching rain",
+          "Listening to bedtime stories",
+          "Helping with groceries",
+          "Counting to 100",
+          "Watching a cartoon movie",
+          "Dancing to music",
+          "Making a card for grandma",
+          "Reading at bedtime",
+          "Making a list for Santa",
+          "Hiking in the park",
+          "Counting hands and feet",
+          "Cuddling with a teddy bear",
+          "Practicing greetings",
+          "Watching the moon",
+          "Doing jumping jacks",
+          "Eating apples",
+          "Sharing stickers",
+          "Making maracas",
+          "Wearing a scarf",
+          "Drawing family members",
+          "Learning new colors",
+          "Baking cupcakes",
+          "Building sandcastles at the beach",
+          "Playing hide and seek",
+          "Helping with recycling",
+          "Counting stars",
+          "Listening to animal sounds",
+          "Family dinner",
+          "Watching a magic show",
+          "Writing a letter to Santa",
+          "Picking up toys",
+          "Packing a school bag",
+          "Reading the time",
+          "Making a pillow fort",
+          "Jumping on a trampoline",
+          "Family photo day",
+          "Coloring rainbow pictures",
+          "Learning to clap",
+          "Wearing mittens",
+          "Taking turns",
+          "Naming shapes",
+          "Drawing my house",
+          "Collecting rocks",
+          "Counting frogs",
+          "Crafting with paper",
+          "My favorite flavor",
+          "Making family dinner",
+          "Playing with action figures",
+          "Helping mom cook",
+          "Paper boat race",
+          "Drawing a rainbow",
+          "Making a fruit salad",
+          "Closing the door",
+          "Brushing teeth at night",
+          "Building with blocks",
+          "Picking up laundry",
+          "Feeding a hamster",
+          "Drawing a car",
+          "Padding a puppy",
+          "Folding towels",
+          "Rolling up a sleeping bag",
+          "Happy birthday song",
+          "Counting shoes",
+          "Finding matching socks",
+          "Making funny faces",
+          "Writing a Christmas list",
+          "Playing musical chairs",
+          "Cleaning up after painting",
+          "Drawing faces",
+          "Wrapping presents",
+          "Playing on the swings",
+          "My favorite playground",
+          "Blowing up balloons",
+          "Playing “Simon Says”",
+          "Passing a ball",
+          "Celebrating a festival",
+          "Hanging family photos",
+          "Morning greetings",
+          "Baking brownies",
+          "Coloring with pencils",
+          "Practicing tying bows",
+          "Drawing trees",
+          "My favorite weekend activity",
+          "Drawing animals",
+          "Counting fingers",
+          "Family picnic",
+          "Painting with watercolors",
+          "Eating cookies",
+          "School parade",
+          "Making holiday decorations",
+          "Making sandwiches",
+          "New year’s resolutions",
+          "Visiting friends at home",
+          "Coloring shapes",
+          "My first school day",
+          "Family day trip",
+          "Drawing with markers",
+      ];
+
+      function syncDivToLocalStorage(id) {
+          const element = document.getElementById(id);
+          element.textContent = localStorage.getItem(id)  ||  default_system_message;
+          element.addEventListener("input", () => { localStorage.setItem(id, element.textContent); });
+          element.addEventListener("paste", () => { localStorage.setItem(id, element.textContent); });
+      }
+      function syncInputToLocalStorage(id) {
+          const element = document.getElementById(id);
+          element.value = localStorage.getItem(id)  ||  "";
+          element.addEventListener("input", () => { localStorage.setItem(id, element.value); });
+          element.addEventListener("paste", () => { localStorage.setItem(id, element.value); });
+      }
+      syncDivToLocalStorage("system-message");
+      syncInputToLocalStorage("recording");
+      syncInputToLocalStorage("model");
+      syncInputToLocalStorage("temp");
+      syncInputToLocalStorage("key");
+      syncInputToLocalStorage("theme");
+
+      document.getElementById("clear-all").addEventListener("click", () => {
+          while (messages.firstChild) {
+              messages.removeChild(messages.firstChild);
+          }
+          newUserMessage();
+          localStorage.setItem("history", "");
+      });
+
+      document.getElementById("new-theme").addEventListener("click", () => {
+          theme.value = themes[Math.floor(Math.random() * themes.length)];
+          localStorage.setItem("theme", theme.value);
+      });
+
+      function getHistory() {
+          return JSON.stringify(Array.from(messages.children).map(message => ({
+              user: message.querySelector("div.user-message").innerText,
+              assistant: message.lastElementChild.innerText,
+          })));
+      }
+
+      function newUserMessage() {
+          messages.insertAdjacentHTML("beforeend", newMessageAsHTML);
+          const message = messages.lastElementChild;
+          const div = message.firstElementChild;
+          const svg_record = message.querySelector("svg.record");
+          svg_record.addEventListener("click", () => record(message));
+          const svg_send = message.querySelector("svg.send");
+          svg_send.addEventListener("click", () => send(message));
+      }
+
+      async function record(message) {
+          const div = message.querySelector("div.user-message");
+
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const recordedChunks = [];
+          const mediaRecorder = new MediaRecorder(stream);
+
+          const audioPromise = new Promise((resolve) => {
+              mediaRecorder.ondataavailable = (e) => recordedChunks.push(e.data);
+              mediaRecorder.onstop = () => resolve(new Blob(recordedChunks, { type: "audio/webm" }));
+          });
+
+          let record_button = message.querySelector("svg.record").firstElementChild.firstElementChild;
+          record_button.style.fill = "red";
+          mediaRecorder.start();
+
+          window.setTimeout(() => {
+              record_button.style.fill = "#ffff00";
+              mediaRecorder.stop();
+          }, recording.value * 1000);
+
+          const audioBlob = await audioPromise;
+
+          const formData = new FormData();
+          formData.append("file", audioBlob, "audio.webm");
+          formData.append("model", "whisper-1");
+          // formData.append("language", "es");
+          formData.append("model_size", "medium");
+          formData.append("response_format", "json");
+
+          div.textContent = "...";
+
+          const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+              method: "POST",
+              headers: {
+                  "Authorization": "Bearer " + key.value,
+              },
+              body: formData,
+          });
+
+          const data = await response.json();
+          div.textContent = data.text;
+      }
+
+      function send(message) {
+          if (!model.value  ||  !temp.value  ||  !key.value) {
+              return;
+          }
+          const temperature = Number(temp.value);
+          if (temperature < 0  ||  temperature > 2) {
+              return;
+          }
+
+          while (message.nextSibling) {
+              messages.removeChild(message.nextSibling);
+          }
+          const output = message.lastElementChild;
+          output.textContent = "";
+
+          localStorage.setItem("history", getHistory());
+
+          let listOfMessages = [{role: "system", content: systemMessage.textContent + theme.value}];
+          for (let child of messages.children) {
+              const user_message = child.querySelector("div.user-message").textContent;
+              if (user_message.trim() != "") {
+                  listOfMessages.push({role: "user", content: user_message});
+              }
+              if (child.lastElementChild.textContent.trim() != "") {
+                  listOfMessages.push({role: "assistant", content: child.lastElementChild.textContent});
+              }
+          }
+
+          fetch("https://api.openai.com/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": "Bearer " + key.value,
+              },
+              body: JSON.stringify({
+                  model: model.value,
+                  temperature: temperature,
+                  messages: listOfMessages,
+                  stream: true,
+              }),
+
+          }).then(async response => {
+              if (!response.ok) {
+                  throw new Error(`HTML response is ${response.status}.`);
+              }
+
+              const reader = response.body.getReader();
+              const decoder = new TextDecoder("utf-8");
+              let done = false;
+              let buffer = "";
+
+              while (!done) {
+                  const { value, d } = await reader.read();
+                  done = d;
+                  if (done) {
+                      break;
+                  }
+
+                  buffer += decoder.decode(value, { stream: true });
+
+                  let index;
+                  while ((index = buffer.indexOf("\n")) !== -1) {
+                      const line = buffer.slice(0, index).trim();
+                      buffer = buffer.slice(index + 1);
+                      if (line === ""  ||  !line.startsWith("data:")) {
+                          continue;
+                      }
+
+                      const data = line.slice(5).trim();
+                      if (data === "[DONE]") {
+                          done = true;
+                          break;
+                      }
+
+                      try {
+                          const json = JSON.parse(data);
+                          output.textContent += json.choices?.[0]?.delta?.content  ||  "";
+                      }
+                      catch (error) {
+                          throw new Error(`${error.toString()} in chunk:\n\n${data}`);
+                      }
+                  }
+              }
+
+              localStorage.setItem("history", getHistory());
+
+              newUserMessage();
+
+          }).catch(error => {
+              output.textContent = `[${error.toString()}]`;
+          });
+      }
+
+      function saySpanish(event) {
+          let range;
+          if (document.caretRangeFromPoint) {
+              range = document.caretRangeFromPoint(event.clientX, event.clientY);
+          } else if (document.caretPositionFromPoint) {
+              const pos = document.caretPositionFromPoint(event.clientX, event.clientY);
+              range = document.createRange();
+              range.setStart(pos.offsetNode, pos.offset);
+              range.collapse(true);
+          } else {
+              return;
+          }
+
+          if (!range || !range.startContainer || range.startContainer.nodeType !== Node.TEXT_NODE) {
+              return;
+          }
+
+          const textNode = range.startContainer;
+          const offset = range.startOffset;
+
+          const text = textNode.textContent;
+
+          const before = text.lastIndexOf('“', offset);
+          const after = text.indexOf('”', offset);
+
+          if (before === -1 || after === -1 || before >= after) {
+              return;
+          }
+
+          const quoted = text.slice(before + 1, after);
+
+          if (!quoted.trim()) {
+              return;
+          }
+
+          const utterance = new window.SpeechSynthesisUtterance(quoted);
+          utterance.lang = "es-MX";
+          utterance.rate = 0.5;
+          window.speechSynthesis.speak(utterance);
+      }
+
+      // function saySpanish(element) {
+      //     const text = element.textContent;
+      //     const matches = [];
+      //     const regex = /“([^”]+)”/g;
+      //     let match;
+      //     while ((match = regex.exec(text)) !== null) {
+      //         matches.push(match[1]);
+      //     }
+      //     if (matches.length === 0) {
+      //         return;
+      //     }
+
+      //     let index = 0;
+
+      //     function speakNext() {
+      //       if (index >= matches.length) return;
+
+      //       const utterance = new window.SpeechSynthesisUtterance(matches[index]);
+      //       utterance.lang = "es-MX";
+      //       utterance.rate = 0.5;
+      //       utterance.onend = function() {
+      //           index++;
+      //           setTimeout(speakNext, 500);
+      //       };
+      //       window.speechSynthesis.speak(utterance);
+      //     }
+
+      //     speakNext();
+      // }
+
+      let messages = document.getElementById("messages");
+      let systemMessage = document.getElementById("system-message");
+      let recording = document.getElementById("recording");
+      let model = document.getElementById("model");
+      let temp = document.getElementById("temp");
+      let key = document.getElementById("key");
+      let theme = document.getElementById("theme");
+
+      const newMessageAsHTML = `
+<div class="message">
+  <svg viewBox="0 0 10.485665 10.48566" width="2em" class="record">
+    <g transform="translate(-74.0854,-135.86096)">
+      <path style="fill:#ffff00;stroke-width:0;" d="m 79.327974,135.86096 a 5.2429566,5.2429566 0 0 0 -5.242574,5.24309 5.2429566,5.2429566 0 0 0 5.242574,5.24257 5.2429566,5.2429566 0 0 0 5.243091,-5.24257 5.2429566,5.2429566 0 0 0 -5.243091,-5.24309 z m 0,2.62154 a 2.6214783,2.6214783 0 0 1 2.621546,2.62155 2.6214783,2.6214783 0 0 1 -2.621546,2.62154 2.6214783,2.6214783 0 0 1 -2.621028,-2.62154 2.6214783,2.6214783 0 0 1 2.621028,-2.62155 z"/>
+    </g>
+  </svg>
+  <div class="user-message" contenteditable="plaintext-only"></div>
+  <svg viewBox="0 0 111.01965 111.47673" width="2em" class="send">
+    <g transform="translate(-38.425328,-84.136154)">
+      <path style="fill:#ffff00;stroke:#ffff00;stroke-width:10;stroke-linejoin:round;" d="M 52.567223,151.75928 43.425096,190.61331 144.44559,139.87452 43.425096,89.135727 l 9.142127,38.854033 91.878367,11.88476 z"/>
+    </g>
+  </svg>
+  <pre class="ai-message" onclick="saySpanish(event)"></pre>
+</div>
+`;
+
+      const history = localStorage.getItem("history")  ||  "";
+      if (history == "") {
+          newUserMessage();
+      }
+      else {
+          for (const message of Object.values(JSON.parse(history))) {
+              if (message.user != "") {
+                  newUserMessage();
+                  const last = messages.lastElementChild;
+                  last.querySelector("div.user-message").innerText = message.user;
+                  if (message.assistant == "") {
+                      last.lastElementChild.innerText = "[No saved response.]";
+                  }
+                  else {
+                      last.lastElementChild.innerText = message.assistant;
+                  }
+              }
+          }
+          newUserMessage();
+      }
+
+    </script>
+  </body>
+</html>
