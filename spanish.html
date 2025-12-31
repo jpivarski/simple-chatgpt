@@ -1341,36 +1341,6 @@
           window.speechSynthesis.speak(utterance);
       }
 
-      // function saySpanish(element) {
-      //     const text = element.textContent;
-      //     const matches = [];
-      //     const regex = /“([^”]+)”/g;
-      //     let match;
-      //     while ((match = regex.exec(text)) !== null) {
-      //         matches.push(match[1]);
-      //     }
-      //     if (matches.length === 0) {
-      //         return;
-      //     }
-
-      //     let index = 0;
-
-      //     function speakNext() {
-      //       if (index >= matches.length) return;
-
-      //       const utterance = new window.SpeechSynthesisUtterance(matches[index]);
-      //       utterance.lang = "es-MX";
-      //       utterance.rate = 0.5;
-      //       utterance.onend = function() {
-      //           index++;
-      //           setTimeout(speakNext, 500);
-      //       };
-      //       window.speechSynthesis.speak(utterance);
-      //     }
-
-      //     speakNext();
-      // }
-
       let messages = document.getElementById("messages");
       let systemMessage = document.getElementById("system-message");
       let recording = document.getElementById("recording");
