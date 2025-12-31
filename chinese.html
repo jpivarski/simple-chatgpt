@@ -609,12 +609,14 @@ Here is the list of HSK1 words, the only allowed words.
 
       function syncDivToLocalStorage(id) {
           const element = document.getElementById(id);
+          id = "chinese_" + id;
           element.innerHTML = localStorage.getItem(id)  ||  default_system_message;
           element.addEventListener("input", () => { localStorage.setItem(id, element.innerHTML); });
           element.addEventListener("paste", () => { localStorage.setItem(id, element.innerHTML); });
       }
       function syncInputToLocalStorage(id) {
           const element = document.getElementById(id);
+          id = "chinese_" + id;
           element.value = localStorage.getItem(id)  ||  "";
           element.addEventListener("input", () => { localStorage.setItem(id, element.value); });
           element.addEventListener("paste", () => { localStorage.setItem(id, element.value); });
@@ -629,7 +631,7 @@ Here is the list of HSK1 words, the only allowed words.
               messages.removeChild(messages.firstChild);
           }
           newUserMessage();
-          localStorage.setItem("history", "");
+          localStorage.setItem("chinese_history", "");
       });
 
       function getHistory() {
@@ -662,7 +664,7 @@ Here is the list of HSK1 words, the only allowed words.
           const output = message.lastElementChild;
           output.innerHTML = "";
 
-          localStorage.setItem("history", getHistory());
+          localStorage.setItem("chinese_history", getHistory());
 
           let listOfMessages = [{role: "system", content: systemMessage.innerHTML.split("---")[0]}];
           for (let child of messages.children) {
@@ -731,7 +733,7 @@ Here is the list of HSK1 words, the only allowed words.
                   }
               }
 
-              localStorage.setItem("history", getHistory());
+              localStorage.setItem("chinese_history", getHistory());
 
               newUserMessage();
 
@@ -758,7 +760,7 @@ Here is the list of HSK1 words, the only allowed words.
 </div>
 `;
 
-      const history = localStorage.getItem("history")  ||  "";
+      const history = localStorage.getItem("chinese_history")  ||  "";
       if (history == "") {
           newUserMessage();
       }

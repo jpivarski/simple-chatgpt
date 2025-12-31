@@ -1116,12 +1116,14 @@
 
       function syncDivToLocalStorage(id) {
           const element = document.getElementById(id);
+          id = "spanish_" + id;
           element.textContent = localStorage.getItem(id)  ||  default_system_message;
           element.addEventListener("input", () => { localStorage.setItem(id, element.textContent); });
           element.addEventListener("paste", () => { localStorage.setItem(id, element.textContent); });
       }
       function syncInputToLocalStorage(id) {
           const element = document.getElementById(id);
+          id = "spanish_" + id;
           element.value = localStorage.getItem(id)  ||  "";
           element.addEventListener("input", () => { localStorage.setItem(id, element.value); });
           element.addEventListener("paste", () => { localStorage.setItem(id, element.value); });
@@ -1138,12 +1140,12 @@
               messages.removeChild(messages.firstChild);
           }
           newUserMessage();
-          localStorage.setItem("history", "");
+          localStorage.setItem("spanish_history", "");
       });
 
       document.getElementById("new-theme").addEventListener("click", () => {
           theme.value = themes[Math.floor(Math.random() * themes.length)];
-          localStorage.setItem("theme", theme.value);
+          localStorage.setItem("spanish_theme", theme.value);
       });
 
       function getHistory() {
@@ -1222,7 +1224,7 @@
           const output = message.lastElementChild;
           output.textContent = "";
 
-          localStorage.setItem("history", getHistory());
+          localStorage.setItem("spanish_history", getHistory());
 
           let listOfMessages = [{role: "system", content: systemMessage.textContent + theme.value}];
           for (let child of messages.children) {
@@ -1291,7 +1293,7 @@
                   }
               }
 
-              localStorage.setItem("history", getHistory());
+              localStorage.setItem("spanish_history", getHistory());
 
               newUserMessage();
 
@@ -1366,7 +1368,7 @@
 </div>
 `;
 
-      const history = localStorage.getItem("history")  ||  "";
+      const history = localStorage.getItem("spanish_history")  ||  "";
       if (history == "") {
           newUserMessage();
       }
